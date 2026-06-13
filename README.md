@@ -150,7 +150,7 @@ For production use, API calls would move to a secure backend with environment va
 
 ## Demo
 - Live: vcookie-job-application-agent.netlify.app
-- Video: [Add YouTube/Vimeo link]
+- Video: https://youtu.be/GwDg2F9vZFw
 
 ## Contact
 - GitHub: github.com/Vengefulcookie
