@@ -123,7 +123,7 @@ API keys are **never** stored or committed. For production, API calls would move
 
 ## Demo
 
-**Live:** [Add your deployed link]  
+**Live:** [https://github.com/Vengefulcookie/job-application-agent]  
 **Video:** [Add YouTube/Vimeo link]
 
 ---
