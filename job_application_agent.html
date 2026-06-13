@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Job Application Agent</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f5f5f3;color:#1a1a1a;min-height:100vh;display:flex;align-items:flex-start;justify-content:center;padding:2rem 1rem}
+.app{background:#fff;border-radius:16px;border:1px solid #e5e5e0;max-width:960px;width:100%;overflow:hidden}
+.app-header{padding:14px 20px;border-bottom:1px solid #eee;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.header-left{display:flex;align-items:center;gap:10px}
+.app-icon{width:32px;height:32px;border-radius:8px;background:#e8f1fb;display:flex;align-items:center;justify-content:center;font-size:16px}
+.app-title{font-size:15px;font-weight:600;color:#1a1a1a}
+.app-sub{font-size:12px;color:#999}
+.iq-badge{font-size:11px;padding:4px 10px;border-radius:20px;background:#fff4e0;color:#b35c00;border:1px solid #f5d49a;font-weight:500}
+.api-note{background:#fffbea;border:1px solid #f0e060;border-radius:0;padding:10px 20px;font-size:12px;color:#7a6800;border-left:none;border-right:none;line-height:1.6}
+.api-note a{color:#5a4e00}
+.api-note code{background:#f5edb0;padding:1px 5px;border-radius:3px;font-size:11px}
+.config-bar{background:#f9f9f7;border-bottom:1px solid #eee;padding:10px 20px;display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
+.config-field{display:flex;flex-direction:column;gap:3px;flex:1;min-width:180px}
+.config-label{font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:0.04em}
+.config-input{font-size:12px;padding:7px 10px;border-radius:6px;border:1px solid #ddd;background:#fff;color:#1a1a1a;font-family:inherit;transition:border-color 0.15s}
+.config-input:focus{outline:none;border-color:#999}
+.config-input.set{border-color:#b8dfc8;background:#fafffe}
+.app-body{display:grid;grid-template-columns:1fr 1fr;min-height:480px}
+.panel{padding:18px 20px}
+.panel-left{border-right:1px solid #eee}
+.field-label{font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px}
+textarea{width:100%;resize:vertical;font-size:13px;padding:10px 12px;border-radius:8px;border:1px solid #ddd;background:#fff;color:#1a1a1a;font-family:inherit;line-height:1.5;transition:border-color 0.15s}
+textarea:focus{outline:none;border-color:#999}
+textarea.filled{border-color:#b8dfc8;background:#fafffe}
+.tip{font-size:11px;color:#bbb;margin-top:4px}
+.run-btn{width:100%;margin-top:14px;padding:11px;border-radius:8px;border:1px solid #1a1a1a;background:#1a1a1a;color:#fff;font-size:14px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:background 0.15s}
+.run-btn:hover:not(:disabled){background:#333}
+.run-btn:disabled{opacity:0.4;cursor:not-allowed}
+.reset-btn{width:100%;margin-top:8px;padding:9px;border-radius:8px;border:1px solid #ddd;background:transparent;color:#666;font-size:13px;cursor:pointer}
+.reset-btn:hover{background:#f5f5f3}
+.extra-input{font-size:12px;padding:7px 10px;border-radius:6px;border:1px solid #ddd;background:#fff;color:#1a1a1a;font-family:inherit;width:100%;transition:border-color 0.15s}
+.extra-input:focus{outline:none;border-color:#999}
+.steps-label{font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:12px}
+.step-row{display:flex;gap:10px;align-items:flex-start;margin-bottom:8px}
+.step-icon{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;margin-top:1px;transition:all 0.2s}
+.step-icon.done{background:#e8f5ee;color:#2e7d4f}
+.step-icon.active{background:#e8f1fb;color:#1a6fb5}
+.step-icon.pending{background:#f5f5f3;color:#bbb;border:1px solid #e5e5e0}
+.step-icon.iq{background:#fff4e0;color:#b35c00}
+.step-body{flex:1;min-width:0}
+.step-name{font-size:12px;font-weight:500;color:#1a1a1a;margin-bottom:2px}
+.step-name.pending{color:#aaa}
+.step-detail{font-size:11px;color:#888;line-height:1.5}
+.step-result{font-size:11px;border-radius:6px;padding:6px 8px;margin-top:4px;line-height:1.6}
+.step-result.success{background:#f0faf4;border-left:2px solid #2e7d4f;color:#1a1a1a}
+.step-result.info{background:#f0f7ff;border-left:2px solid #1a6fb5;color:#1a1a1a}
+.step-result.iq{background:#fff9f0;border-left:2px solid #e8a020;color:#1a1a1a}
+.step-result.error{background:#fdf0f0;border-left:2px solid #e74c3c;color:#c0392b}
+.badge-row{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px}
+.badge{font-size:10px;padding:2px 7px;border-radius:20px;font-weight:500}
+.badge.match{background:#e8f5ee;color:#2e7d4f}
+.badge.gap{background:#fde8e8;color:#c0392b}
+.score-row{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.score-bar-wrap{flex:1;height:5px;background:#e5e5e0;border-radius:3px;overflow:hidden}
+.score-bar-fill{height:100%;border-radius:3px;background:#2e7d4f;transition:width 0.5s ease}
+.score-num{font-size:12px;font-weight:600;color:#2e7d4f;min-width:32px}
+.connector{width:1px;height:8px;background:#e5e5e0;margin-left:12px}
+.spinner{width:14px;height:14px;border:2px solid rgba(255,255,255,0.4);border-top-color:#fff;border-radius:50%;animation:spin 0.7s linear infinite;display:inline-block}
+.spinner-dark{width:12px;height:12px;border:2px solid #ddd;border-top-color:#555;border-radius:50%;animation:spin 0.7s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+.output-area{border-top:1px solid #eee;padding:16px 20px;background:#f9f9f7}
+.out-tabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+.out-tab{font-size:12px;padding:5px 12px;border-radius:20px;border:1px solid #ddd;background:#fff;color:#666;cursor:pointer;transition:all 0.15s}
+.out-tab.active{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
+.out-tab:disabled{opacity:0.4;cursor:not-allowed}
+.out-content{background:#fff;border-radius:8px;border:1px solid #e5e5e0;padding:12px 14px;font-size:13px;line-height:1.8;color:#222;white-space:pre-wrap;word-break:break-word;min-height:100px;max-height:320px;overflow-y:auto}
+.out-actions{display:flex;gap:8px;margin-top:10px}
+.action-btn{font-size:12px;padding:5px 12px;border-radius:6px;border:1px solid #ddd;background:#fff;color:#555;cursor:pointer}
+.action-btn:hover{background:#f0f0ed}
+.idle-state{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;min-height:220px;gap:8px;color:#ccc;font-size:13px;text-align:center;padding:20px}
+.iq-source-tag{font-size:10px;background:#fff4e0;color:#b35c00;border:1px solid #f5d49a;border-radius:4px;padding:1px 5px;margin-left:4px;font-weight:500}
+
+.app-footer{padding:12px 20px;border-top:1px solid #eee;display:flex;align-items:center;justify-content:space-between;background:#f9f9f7;flex-wrap:wrap;gap:8px}
+.footer-name{font-size:12px;color:#888;font-weight:500}
+.footer-links{display:flex;align-items:center;gap:16px}
+.footer-links a{display:flex;align-items:center;gap:5px;font-size:12px;color:#666;text-decoration:none;transition:color 0.15s}
+.footer-links a:hover{color:#1a1a1a}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="app-header">
+    <div class="header-left">
+      <div class="app-icon">🤖</div>
+      <div>
+        <div class="app-title">Job Application Agent</div>
+        <div class="app-sub">ATS-optimised summary &amp; skills · Cover letter · Gap analysis · Powered by Groq / Gemini</div>
+      </div>
+    </div>
+    <span class="iq-badge">⚡ Foundry IQ</span>
+  </div>
+
+  <div class="api-note">
+    <strong>Free to use — two AI options, no card required for either.</strong><br>
+    <strong>Option A — Groq (recommended):</strong> Get a free key at <a href="https://console.groq.com" target="_blank">console.groq.com</a> — sign up, go to API Keys, create one. Fast and reliable free tier.<br>
+    <strong>Option B — Gemini:</strong> Get a free key at <a href="https://aistudio.google.com" target="_blank">aistudio.google.com</a> — if you see a quota error, switch to Groq.<br>
+    Azure AI Search fields are optional — skip them and the agent uses the pasted CV as context instead.
+  </div>
+
+  <div class="config-bar">
+    <div class="config-field" style="max-width:130px">
+      <label class="config-label" for="ai-provider">AI Provider</label>
+      <select class="config-input" id="ai-provider" onchange="toggleProviderFields()" style="cursor:pointer">
+        <option value="groq">Groq (free)</option>
+        <option value="gemini">Gemini (free)</option>
+      </select>
+    </div>
+    <div class="config-field" id="field-groq">
+      <label class="config-label" for="key-groq">Groq API Key <span style="font-weight:400;color:#aaa">(free — console.groq.com)</span></label>
+      <input class="config-input" id="key-groq" type="password" placeholder="gsk_..." oninput="this.classList.toggle('set',this.value.length>10)">
+    </div>
+    <div class="config-field" id="field-gemini" style="display:none">
+      <label class="config-label" for="key-gemini">Gemini API Key <span style="font-weight:400;color:#aaa">(free — aistudio.google.com)</span></label>
+      <input class="config-input" id="key-gemini" type="password" placeholder="AIza..." oninput="this.classList.toggle('set',this.value.length>10)">
+    </div>
+    <div class="config-field">
+      <label class="config-label" for="key-search-endpoint">Azure AI Search Endpoint <span style="font-weight:400;color:#aaa">(optional)</span></label>
+      <input class="config-input" id="key-search-endpoint" type="text" placeholder="https://your-search.search.windows.net" oninput="this.classList.toggle('set',this.value.length>10)">
+    </div>
+    <div class="config-field">
+      <label class="config-label" for="key-search-key">Azure AI Search API Key <span style="font-weight:400;color:#aaa">(optional)</span></label>
+      <input class="config-input" id="key-search-key" type="password" placeholder="Your admin key" oninput="this.classList.toggle('set',this.value.length>10)">
+    </div>
+    <div class="config-field" style="max-width:160px">
+      <label class="config-label" for="key-index">Index Name</label>
+      <input class="config-input" id="key-index" type="text" placeholder="cv-knowledge-base" value="cv-knowledge-base">
+    </div>
+  </div>
+
+  <div class="app-body">
+    <div class="panel panel-left">
+      <div class="field-label">Candidate CV</div>
+      <div style="font-size:11px;background:#fff9f0;border:1px solid #f5d49a;border-radius:6px;padding:6px 10px;margin-bottom:6px;color:#7a5800;line-height:1.5;">
+        💡 <strong>Tip:</strong> The more detail in your CV, the better the output. Include all skills, tools, certifications, projects with tech stacks, and any technologies you've used even briefly. A detailed CV = accurate, honest results.
+      </div>
+      <textarea id="cv-input" rows="9" placeholder="Paste the candidate's full CV here — experience, skills, education, certifications, projects..."></textarea>
+      <p class="tip">Used as direct context and as the Foundry IQ knowledge source if Azure is configured.</p>
+
+      <div class="field-label" style="margin-top:12px">GitHub & Portfolio <span style="font-weight:400;text-transform:none;font-size:11px;color:#bbb">(optional — improves results for tech roles)</span></div>
+      <div style="display:flex;gap:8px;margin-bottom:4px">
+        <input class="extra-input" id="github-url" type="text" placeholder="github.com/yourusername" style="flex:1">
+        <input class="extra-input" id="portfolio-url" type="text" placeholder="yourportfolio.netlify.app" style="flex:1">
+      </div>
+      <p class="tip">If provided the agent will read your README files and portfolio to enrich the CV context.</p>
+
+      <div class="field-label" style="margin-top:12px">
+        Extra skills to include
+        <span style="font-weight:400;text-transform:none;font-size:11px;color:#bbb">(optional — add anything not in your CV above)</span>
+      </div>
+      <textarea id="extra-skills" rows="2" placeholder="e.g. n8n workflow automation, YAML pipeline configuration, Azure Key Vault, bcrypt authentication..."></textarea>
+      <p class="tip">Know a skill from the JD that you have but forgot to put in your CV? Add it here and the agent will include it.</p>
+
+      <div class="field-label" style="margin-top:14px">Job description</div>
+      <textarea id="jd-input" rows="7" placeholder="Paste the full job description — role title, requirements, responsibilities, company info..."></textarea>
+      <p class="tip">Include everything for the most targeted output.</p>
+
+      <button class="run-btn" id="run-btn" onclick="runAgent()">
+        <span id="btn-label">▶ Run agent</span>
+      </button>
+      <button class="reset-btn" onclick="resetAll()">Reset</button>
+    </div>
+
+    <div class="panel" id="steps-panel">
+      <div id="idle-state" class="idle-state">
+        <div style="font-size:36px">🤖</div>
+        <div style="font-weight:500;color:#888">Ready to analyse</div>
+        <div>Paste a CV and job description, then run the agent. It tailors your summary and skills for the role, writes a cover letter, identifies gaps, and suggests certs to close them.</div>
+      </div>
+      <div id="steps-content" style="display:none">
+        <div class="steps-label">Agent reasoning steps</div>
+        <div id="steps-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="output-area" id="output-area" style="display:none">
+    <div class="out-tabs">
+      <button class="out-tab active" onclick="showTab('fullcv',this)" id="tab-fullcv" disabled>⭐ Summary &amp; Skills</button>
+      <button class="out-tab" onclick="showTab('cover',this)" id="tab-cover" disabled>Cover letter</button>
+      <button class="out-tab" onclick="showTab('gaps',this)" id="tab-gaps" disabled>Gap analysis</button>
+      <button class="out-tab" onclick="showTab('certs',this)" id="tab-certs" disabled>Cert suggestions</button>
+    </div>
+    <div class="out-content" id="out-content" contenteditable="true" spellcheck="true">Running agent...</div>
+    <p style="font-size:11px;color:#aaa;margin-bottom:8px;">✏️ Click anywhere in the output to edit before copying.</p>
+    <div class="out-actions">
+      <button class="action-btn" onclick="copyTab()">⎘ Copy</button>
+      <button class="action-btn" onclick="downloadTab()">↓ Download .txt</button>
+    </div>
+  </div>
+
+  <div class="app-footer">
+    <span class="footer-name">Built by Snethemba Shangase</span>
+    <div class="footer-links">
+      <a href="https://github.com/Vengefulcookie" target="_blank" rel="noopener">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.477 2 12c0 4.418 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.009-.868-.013-1.703-2.782.603-3.369-1.342-3.369-1.342-.454-1.155-1.11-1.463-1.11-1.463-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836a9.59 9.59 0 012.504.337c1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.741 0 .267.18.578.688.48C19.138 20.163 22 16.418 22 12c0-5.523-4.477-10-10-10z"/></svg>
+        GitHub
+      </a>
+      <a href="https://www.linkedin.com/in/snethemba-shangase-softw-mech-civil0101" target="_blank" rel="noopener">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+        LinkedIn
+      </a>
+      <a href="https://vcookie-portfolio.netlify.app" target="_blank" rel="noopener">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+        Portfolio
+      </a>
+    </div>
+  </div>
+</div>
+
+<script>
+const GEMINI_MODEL = 'gemini-1.5-flash-latest';
+const GEMINI_URL = () =>
+  `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${KEYS.gemini()}`;
+
+const KEYS = {
+  gemini:         () => document.getElementById('key-gemini').value.trim(),
+  groq:           () => document.getElementById('key-groq').value.trim(),
+  provider:       () => document.getElementById('ai-provider').value,
+  searchEndpoint: () => document.getElementById('key-search-endpoint').value.trim(),
+  searchKey:      () => document.getElementById('key-search-key').value.trim(),
+  indexName:      () => document.getElementById('key-index').value.trim() || 'cv-knowledge-base',
+};
+
+// Small delay between steps to stay within free tier TPM limits
+const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+function toggleProviderFields() {
+  const p = KEYS.provider();
+  document.getElementById('field-groq').style.display   = p === 'groq'   ? 'flex' : 'none';
+  document.getElementById('field-gemini').style.display = p === 'gemini' ? 'flex' : 'none';
+}
+
+const outputs = { fullcv:'', cover:'', gaps:'', certs:'' };
+let activeTab = 'summary';
+let running = false;
+
+const STEPS = [
+  { id:'iq',      label:'Foundry IQ — Retrieve grounded context',   detail:'Querying the Foundry IQ knowledge base to retrieve relevant CV context for this role.', iq:true },
+  { id:'extract', label:'Step 1 — Extract JD requirements',          detail:'Reading the job description and identifying all required skills and experience.' },
+  { id:'score',   label:'Step 2 — Score CV against requirements',    detail:'Comparing the retrieved CV context to requirements and calculating a match score.' },
+  { id:'fullcv',  label:'Step 3 — Tailor summary &amp; skills',      detail:'Rewriting your professional summary and skills section with role-specific keywords — the parts ATS scanners focus on.' },
+  { id:'cover',   label:'Step 4 — Write cover letter',               detail:'Crafting a personalised cover letter grounded in the candidate\'s actual profile.' },
+  { id:'certs',   label:'Step 5 — Suggest certifications for gaps',  detail:'Identifying skill gaps and recommending certifications to close them.' },
+];
+
+function renderSteps(activeIdx, results) {
+  const list = document.getElementById('steps-list');
+  let html = '';
+  STEPS.forEach((step, i) => {
+    const isDone    = i < activeIdx;
+    const isActive  = i === activeIdx;
+    const isPending = i > activeIdx;
+    const iconClass = isDone ? 'done' : isActive ? (step.iq ? 'iq' : 'active') : 'pending';
+    const iconContent = isDone
+      ? '✓'
+      : isActive ? '<span class="spinner-dark"></span>'
+      : (i === 0 ? '⚡' : i);
+    const result = results[step.id];
+    let resultHtml = '';
+
+    if (isDone && result) {
+      if (step.id === 'iq') {
+        resultHtml = `<div class="step-result iq">⚡ Retrieved ${result.count} context chunk${result.count!==1?'s':''} from ${result.fallback ? 'CV text (Azure not configured)' : 'Foundry IQ knowledge base'} <span class="iq-source-tag">Foundry IQ</span></div>`;
+      } else if (step.id === 'score') {
+        resultHtml = `<div class="step-result success">
+          <div class="score-row">
+            <span style="font-size:11px;color:#888">Match score</span>
+            <div class="score-bar-wrap"><div class="score-bar-fill" style="width:${result.score}%"></div></div>
+            <span class="score-num">${result.score}%</span>
+          </div>
+          <div class="badge-row">
+            ${(result.matches||[]).map(m=>`<span class="badge match">${m}</span>`).join('')}
+            ${(result.gaps||[]).map(g=>`<span class="badge gap">${g}</span>`).join('')}
+          </div>
+        </div>`;
+      } else if (step.id === 'extract') {
+        resultHtml = `<div class="step-result success">Found ${result.length} requirements: ${result.slice(0,6).join(', ')}${result.length>6?` +${result.length-6} more`:''}</div>`;
+      } else {
+        resultHtml = `<div class="step-result success">✓ Complete — see output tabs below</div>`;
+      }
+    } else if (isActive) {
+      resultHtml = `<div class="step-result ${step.iq?'iq':'info'}"><span class="spinner-dark"></span><span style="margin-left:6px;color:#555">${step.iq ? 'Querying Foundry IQ...' : 'Working...'}</span></div>`;
+    }
+
+    html += `<div class="step-row">
+      <div class="step-icon ${iconClass}">${iconContent}</div>
+      <div class="step-body">
+        <div class="step-name${isPending?' pending':''}">${step.label}</div>
+        <div class="step-detail">${isPending ? step.detail : ''}</div>
+        ${resultHtml}
+      </div>
+    </div>${i < STEPS.length-1 ? '<div class="connector"></div>' : ''}`;
+  });
+  list.innerHTML = html;
+}
+
+// ── Foundry IQ retrieval ──────────────────────────────────────────────────
+async function queryFoundryIQ(query) {
+  const endpoint  = KEYS.searchEndpoint();
+  const searchKey = KEYS.searchKey();
+  const indexName = KEYS.indexName();
+  const cv        = document.getElementById('cv-input').value.trim();
+
+  if (!endpoint || !searchKey) {
+    return { chunks:[cv], count:1, fallback:true };
+  }
+  try {
+    const res = await fetch(
+      `${endpoint}/indexes/${indexName}/docs/search?api-version=2024-05-01-preview`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json', 'api-key': searchKey },
+        body: JSON.stringify({
+          search: query,
+          queryType: 'semantic',
+          semanticConfiguration: 'default',
+          top: 5,
+          select: 'content',
+        })
+      }
+    );
+    const data = await res.json();
+    const chunks = (data.value||[]).map(d=>d.content||'').filter(Boolean);
+    return chunks.length
+      ? { chunks, count:chunks.length, fallback:false }
+      : { chunks:[cv], count:1, fallback:true };
+  } catch(e) {
+    console.error('Foundry IQ query failed — falling back to raw CV:', e);
+    return { chunks:[cv], count:1, fallback:true };
+  }
+}
+
+// ── Unified AI call — Groq or Gemini, with auto-retry on rate limit ─────
+async function callAI(prompt, retries = 3) {
+  const provider = KEYS.provider();
+  for (let attempt = 0; attempt < retries; attempt++) {
+    try {
+      if (provider === 'groq') return await callGroq(prompt);
+      return await callGemini(prompt);
+    } catch(e) {
+      const msg = e.message || '';
+      // If rate limited, extract wait time and retry automatically
+      const waitMatch = msg.match(/try again in ([\d.]+)s/i);
+      if (waitMatch && attempt < retries - 1) {
+        const waitMs = Math.ceil(parseFloat(waitMatch[1]) * 1000) + 1000;
+        console.log(`Rate limited. Waiting ${waitMs}ms before retry ${attempt + 2}/${retries}...`);
+        await sleep(waitMs);
+        continue;
+      }
+      // Also handle "Please try again" without a time
+      if ((msg.includes('Rate limit') || msg.includes('rate_limit')) && attempt < retries - 1) {
+        await sleep(15000);
+        continue;
+      }
+      throw e;
+    }
+  }
+}
+
+async function callGroq(prompt) {
+  const key = KEYS.groq();
+  if (!key) throw new Error('Groq API key not set — add it above or get one free at console.groq.com');
+  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+    body: JSON.stringify({
+      model: 'llama-3.1-8b-instant',
+      messages: [{ role: 'user', content: prompt }],
+      max_tokens: 2048,
+      temperature: 0.7,
+    })
+  });
+  const data = await res.json();
+  if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
+  return data.choices?.[0]?.message?.content || '';
+}
+
+async function callGemini(prompt) {
+  const key = KEYS.gemini();
+  if (!key) throw new Error('Gemini API key not set — add it above or get one free at aistudio.google.com');
+  const res = await fetch(GEMINI_URL(), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: { temperature: 0.7, maxOutputTokens: 1024 },
+    })
+  });
+  const data = await res.json();
+  if (data.error) throw new Error(data.error.message);
+  return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+}
+
+// ── Fetch GitHub / portfolio context (optional enrichment) ───────────────
+async function fetchExtraContext() {
+  const githubUrl  = document.getElementById('github-url').value.trim();
+  const portfolioUrl = document.getElementById('portfolio-url').value.trim();
+  let extra = '';
+
+  // Try to fetch GitHub profile README
+  if (githubUrl) {
+    try {
+      // Extract username from URL or plain username
+      const ghUser = githubUrl.replace(/https?:\/\/(www\.)?github\.com\//, '').replace(/\/.*/, '').trim();
+      if (ghUser) {
+        // Fetch the profile README raw content
+        const readmeRes = await fetch(
+          `https://raw.githubusercontent.com/${ghUser}/${ghUser}/main/README.md`
+        );
+        if (readmeRes.ok) {
+          const text = await readmeRes.text();
+          extra += '\n\nGITHUB PROFILE README:\n' + text.substring(0, 1000);
+        }
+      }
+    } catch(e) { /* silently skip if fetch fails */ }
+  }
+
+  // Try to fetch portfolio page text
+  if (portfolioUrl) {
+    try {
+      const url = portfolioUrl.startsWith('http') ? portfolioUrl : 'https://' + portfolioUrl;
+      const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`);
+      if (res.ok) {
+        const data = await res.json();
+        // Strip HTML tags and grab first 1000 chars of text
+        const text = data.contents.replace(/<[^>]+>/g, ' ').replace(/\s+/g,' ').trim();
+        extra += '\n\nPORTFOLIO SITE CONTENT:\n' + text.substring(0, 1000);
+      }
+    } catch(e) { /* silently skip */ }
+  }
+
+  return extra;
+}
+
+// ── Main agent flow ───────────────────────────────────────────────────────
+async function runAgent() {
+  if (running) return;
+  const cv = document.getElementById('cv-input').value.trim();
+  const jd = document.getElementById('jd-input').value.trim();
+  if (!cv)         { alert('Please paste a CV first.');              return; }
+  if (!jd)         { alert('Please paste a job description.');       return; }
+  const activeKey = KEYS.provider() === 'groq' ? KEYS.groq() : KEYS.gemini();
+  if (!activeKey) {
+    const p = KEYS.provider();
+    alert(p === 'groq'
+      ? 'Add your Groq API key above.\nGet one free at console.groq.com'
+      : 'Add your Gemini API key above.\nGet one free at aistudio.google.com');
+    return;
+  }
+
+  running = true;
+  document.getElementById('run-btn').disabled = true;
+  document.getElementById('btn-label').innerHTML = '<span class="spinner"></span> Running...';
+  document.getElementById('idle-state').style.display  = 'none';
+  document.getElementById('steps-content').style.display = 'block';
+  document.getElementById('output-area').style.display   = 'block';
+  // tabs disabled above
+  Object.keys(outputs).forEach(k => outputs[k] = '');
+  document.getElementById('out-content').textContent = 'Running agent...';
+  ['tab-fullcv','tab-cover','tab-gaps','tab-certs'].forEach(id => { const el=document.getElementById(id); if(el) el.disabled=true; });
+  const results = {};
+
+  try {
+    // ── Foundry IQ ────────────────────────────────────────────────────────
+    renderSteps(0, results);
+    const iqResult       = await queryFoundryIQ(jd.substring(0, 500));
+    const extraSkills = document.getElementById('extra-skills').value.trim();
+    const extraContext = await fetchExtraContext();
+    const rawCV = document.getElementById('cv-input').value.trim();
+
+    // Smart CV trimmer — extracts the most useful sections for ATS matching
+    // keeping total context under 1800 chars to stay within Groq free tier limits
+    function trimCV(cv, maxChars = 1800) {
+      if (cv.length <= maxChars) return cv;
+
+      // Priority order: summary > skills > experience > projects > education > rest
+      const sections = {
+        summary: '',
+        skills: '',
+        experience: '',
+        projects: '',
+        education: '',
+        certs: '',
+      };
+
+      const lines = cv.split('\n');
+      let current = 'other';
+      const sectionMap = {
+        summary: ['summary', 'profile', 'about'],
+        skills: ['skill', 'technical', 'competenc', 'proficien'],
+        experience: ['experience', 'employment', 'work history', 'intern'],
+        projects: ['project', 'portfolio', 'built', 'deployed'],
+        education: ['education', 'qualif', 'degree', 'certif', 'diploma'],
+        certs: ['certif', 'azure', 'microsoft certified'],
+      };
+
+      lines.forEach(line => {
+        const lower = line.toLowerCase();
+        for (const [key, keywords] of Object.entries(sectionMap)) {
+          if (keywords.some(k => lower.includes(k)) && line.length < 60) {
+            current = key; return;
+          }
+        }
+        if (sections[current] !== undefined) sections[current] += line + '\n';
+        else sections.experience += line + '\n'; // default bucket
+      });
+
+      // Build trimmed CV in priority order, staying under maxChars
+      let result = '';
+      const order = ['summary','certs','skills','experience','projects','education'];
+      const budgets = { summary:400, certs:350, skills:400, experience:350, projects:250, education:150 };
+      for (const key of order) {
+        const chunk = (sections[key] || '').trim();
+        if (chunk) {
+          const allowed = budgets[key];
+          result += chunk.substring(0, allowed) + '\n\n';
+        }
+        if (result.length >= maxChars) break;
+      }
+      return result.substring(0, maxChars);
+    }
+
+    const trimmedCV = trimCV(rawCV);
+    const groundedContext = trimmedCV
+      + (extraContext ? '\n\n' + extraContext.substring(0, 300) : '')
+      + (extraSkills ? '\n\nADDITIONAL SKILLS (candidate confirmed they have these):\n' + extraSkills : '');
+    results.iq = { count: iqResult.count + (extraContext ? 1 : 0), fallback: iqResult.fallback };
+    renderSteps(1, results);
+    await sleep(12000);
+
+    // ── Step 1: Extract requirements ──────────────────────────────────────
+    const step1Raw = await callAI(
+      `Extract all required and preferred skills, technologies, and experience from this job description.\nReturn ONLY a valid JSON array of short strings (max 3 words each). No markdown, no explanation, just the raw array.\n\nJob description:\n${jd}`
+    );
+    let reqs = [];
+    try {
+      reqs = JSON.parse(step1Raw.replace(/```json|```/g,'').trim());
+    } catch {
+      reqs = step1Raw.split('\n')
+        .filter(l => l.trim().length > 0)
+        .slice(0, 12)
+        .map(l => l.replace(/^[-*"\s\d.]+|[",\s]+$/g,'').trim())
+        .filter(Boolean);
+    }
+    results.extract = reqs;
+    renderSteps(2, results);
+    await sleep(12000);
+
+    // ── Step 2: Score CV (JavaScript semantic matching — reliable, no AI needed) ─
+    function semanticScore(requirements, cvText) {
+      const cv = cvText.toLowerCase();
+      const synonyms = {
+        'bash':['bash','shell scripting','bash scripting'],
+        'ci/cd':['ci/cd','cicd','continuous integration','continuous deployment','pipeline','github actions','azure devops','netlify','auto-deploy'],
+        'python':['python','flask','fastapi','django'],
+        'javascript':['javascript','js','es6','vanilla js'],
+        'node':['node','node.js','nodejs','express'],
+        'react':['react','reactjs'],
+        'docker':['docker','container'],
+        'kubernetes':['kubernetes','k8s'],
+        'azure':['azure','microsoft azure'],
+        'git':['git','github','gitlab','version control'],
+        'sql':['sql','mysql','database','rdbms','sqlite'],
+        'linux':['linux','ubuntu','unix','bash'],
+        'terraform':['terraform','iac','infrastructure as code','arm template','bicep'],
+        'aws':['aws','amazon web services'],
+        'typescript':['typescript',' ts '],
+        'devops':['devops','dev ops','sre'],
+        'api':['api','rest','restful','endpoint','webhook'],
+        'monitoring':['monitoring','azure monitor','application insights','log analytics'],
+        'security':['security','bcrypt','authentication','xss','cors','hsts','csp','vulnerability'],
+        'agile':['agile','scrum','sprint','waterfall'],
+        'testing':['testing','qa','quality assurance','debugging'],
+        'yaml':['yaml','yml'],
+        'powershell':['powershell','ps1'],
+        'networking':['networking','vnet','subnet','nsg','dns','load balanc'],
+        'php':['php'],
+        'css':['css','css3','stylesheet'],
+        'html':['html','html5'],
+      };
+      const matches = [], gaps = [];
+      requirements.forEach(req => {
+        const r = req.toLowerCase().trim();
+        if (cv.includes(r)) { matches.push(req); return; }
+        const words = r.split(/[\s\/\-_,]+/).filter(w => w.length > 2);
+        if (words.some(w => cv.includes(w))) { matches.push(req); return; }
+        let found = false;
+        for (const [concept, syns] of Object.entries(synonyms)) {
+          const reqHit = syns.some(s => r.includes(s)) || r.includes(concept);
+          if (reqHit && syns.some(s => cv.includes(s))) { matches.push(req); found = true; break; }
+        }
+        if (!found) gaps.push(req);
+      });
+      const score = requirements.length > 0 ? Math.round((matches.length / requirements.length) * 100) : 0;
+      return { score, matches, gaps };
+    }
+    const scoreData = semanticScore(reqs, groundedContext);
+    results.score = scoreData;
+    renderSteps(3, results);
+    await sleep(3000);
+
+    // ── Step 3: Tailor summary + skills only (ATS-focused) ─────────────────
+    // Only pass matched skills into the summary so keywords are guaranteed present
+    const matchedSkills = (scoreData.matches || []).join(', ');
+    const fullCV = await callAI(
+      `You are a CV writer optimising for ATS keyword scanners. Write TWO sections only.
+
+PROFESSIONAL SUMMARY
+3-4 sentences in first person. MUST naturally include these matched keywords: ${matchedSkills || reqs.slice(0,6).join(', ')}. Reference the candidate's real role, certifications, and experience from the context. Lead with their strongest qualification for this role.
+
+TECHNICAL SKILLS
+List only skills from the candidate context. Group by category. Put the most relevant to this role first. Each category on its own line. Only what is genuinely in the context.
+
+Rules: Section headers in CAPS. Plain text only. No invented skills. No AWS, Docker, Kubernetes, Linux, Jenkins unless in context.
+
+Matched keywords to include in summary: ${matchedSkills || reqs.slice(0,6).join(', ')}
+Role: ${jd.substring(0,200)}
+Candidate context: ${groundedContext.substring(0,900)}`
+    , 600);
+    outputs.fullcv = fullCV;
+    results.fullcv = true;
+    document.getElementById('out-content').textContent = fullCV;
+    const tabFullCV = document.getElementById('tab-fullcv');
+    if (tabFullCV) tabFullCV.disabled = false;
+    renderSteps(4, results);
+    await sleep(12000);
+
+    // ── Step 4: Cover letter ──────────────────────────────────────────────
+    const cvLines = document.getElementById('cv-input').value.trim().split('\n');
+    // Try to find name in common formats
+    for (const line of cvLines.slice(0, 10)) {
+      const trimmed = line.trim();
+      // Skip common CV section headers
+      if (/^(experience|education|skills|summary|contact|phone|email|github|linkedin|portfolio)/i.test(trimmed)) continue;
+      // Look for lines that look like names (2-4 words, title case, no special chars except hyphen/apostrophe)
+      if (/^[A-Z][a-z]+\s+[A-Z][a-z]+/.test(trimmed) && trimmed.length < 50 && !trimmed.includes('@')) {
+        candidateName = trimmed;
+        break;
+      }
+    }
+
+        const candidateName = prompt('What is your full name? (for the cover letter signature)', 'Your Name');
+    if (candidateName === null) {
+      throw new Error('Cover letter cancelled.');
+    }
+
+    const cover = await callAI(
+      `Write a cover letter for this candidate. Use exactly this structure with blank lines between each paragraph:
+
+PARAGRAPH 1 — OPENING
+One strong opening sentence showing genuine interest. Reference the company or role title if in the JD. Do NOT start with "I am writing to express my interest."
+
+PARAGRAPH 2 — WHY THEY FIT
+2 to 3 sentences. Specific real experience and certifications from the candidate context. Name actual tools and projects. No generic statements.
+
+PARAGRAPH 3 — WHAT THEY BRING TO THIS ROLE
+2 to 3 sentences. What they will specifically contribute. Reference things from the JD that match the context.
+
+PARAGRAPH 4 — CLOSE
+1 to 2 sentences. Thank them. Express availability. Confident, not desperate.
+
+Then on a new line: "Sincerely," and on the next line: "${candidateName}"
+
+STRICT RULES:
+- Only mention tools and experience explicitly in the candidate context.
+- Never mention AWS, Docker, Kubernetes, Linux, Jenkins, Ansible, Terraform, or any tool not in the context.
+- Each paragraph separated by a blank line.
+- No subject line, no date, no address block.
+- Use "Dear [Company] Team" if company is named in JD, otherwise "Dear Hiring Team".
+
+Job description: ${jd.substring(0,400)}
+Matched skills: ${(scoreData.matches||[]).join(', ')}
+Candidate context: ${groundedContext.substring(0,500)}`
+    );
+    outputs.cover = cover;
+    results.cover = true;
+    const tabCover = document.getElementById('tab-cover');
+    if (tabCover) tabCover.disabled = false;
+    renderSteps(5, results);
+    await sleep(12000);
+
+
+    // ── Step 5: Cert suggestions ──────────────────────────────────────────
+    const gaps = scoreData.gaps || [];
+    const certsRaw = await callAI(
+      `Based on these skill gaps, suggest one specific certification per gap.
+STRICT RULES:
+- Check the candidate's existing certifications listed below first.
+- Do NOT suggest a certification the candidate already holds.
+- Only suggest certifications for genuine gaps.
+- Prefer Microsoft, Google, or AWS certifications.
+- Format as a short list: gap name, suggested cert, one sentence why.
+
+Skill gaps: ${gaps.join(', ') || 'general cloud and DevOps skills'}
+
+Candidate already holds these certifications — do NOT suggest these again:
+${groundedContext.substring(0,400)}`
+    );
+    outputs.certs = certsRaw;
+    outputs.gaps  = `Match score: ${scoreData.score}%\n\nStrong matches:\n${(scoreData.matches||[]).map(m=>`✓  ${m}`).join('\n')}\n\nSkill gaps identified:\n${(scoreData.gaps||[]).map(g=>`✗  ${g}`).join('\n')}`;
+    results.certs = true;
+    const tabGaps  = document.getElementById('tab-gaps');
+    const tabCerts = document.getElementById('tab-certs');
+    if (tabGaps)  tabGaps.disabled  = false;
+    if (tabCerts) tabCerts.disabled = false;
+    renderSteps(6, results);
+
+  } catch(e) {
+    document.getElementById('out-content').textContent =
+      '⚠️  Error: ' + (e.message || 'Something went wrong. Check your API key and try again.');
+  }
+
+  running = false;
+  document.getElementById('run-btn').disabled = false;
+  document.getElementById('btn-label').textContent = '▶ Run agent';
+}
+
+function showTab(tab, el) {
+  activeTab = tab;
+  document.querySelectorAll('.out-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('out-content').textContent = outputs[tab] || 'Not yet generated.';
+}
+
+function copyTab() {
+  const text = outputs[activeTab];
+  if (!text) return;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = event.target.closest('button');
+    const orig = btn.textContent;
+    btn.textContent = '✓ Copied';
+    setTimeout(() => { btn.textContent = orig; }, 1500);
+  });
+}
+
+function downloadTab() {
+  const text = outputs[activeTab];
+  if (!text) return;
+  const names = {
+    fullcv:'Tailored_Summary_Skills.txt',
+    cover:'Cover_Letter.txt',
+    gaps:'Gap_Analysis.txt',
+    certs:'Cert_Suggestions.txt'
+  };
+  const blob = new Blob([text],{type:'text/plain'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = names[activeTab];
+  a.click();
+}
+
+function resetAll() {
+  if (running) return;
+  document.getElementById('cv-input').value = '';
+  document.getElementById('github-url').value = '';
+  document.getElementById('extra-skills').value = '';
+  document.getElementById('portfolio-url').value = '';
+  document.getElementById('jd-input').value = '';
+  document.getElementById('idle-state').style.display    = 'flex';
+  document.getElementById('steps-content').style.display = 'none';
+  document.getElementById('output-area').style.display   = 'none';
+  document.getElementById('btn-label').textContent       = '▶ Run agent';
+  Object.keys(outputs).forEach(k => outputs[k] = '');
+  activeTab = 'fullcv';
+}
+</script>
+</body>
+</html>
